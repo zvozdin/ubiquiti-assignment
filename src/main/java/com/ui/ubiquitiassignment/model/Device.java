@@ -2,7 +2,6 @@ package com.ui.ubiquitiassignment.model;
 
 import com.ui.ubiquitiassignment.common.DeviceType;
 import jakarta.validation.constraints.NotEmpty;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -29,7 +28,7 @@ public class Device {
     private String macAddress;
 
     private String uplinkMacAddress;
-    private List<Device> childDevices = new ArrayList<>();
+    private List<String> downlinkMacAddresses = new ArrayList<>();
 
     // todo test case about can register device with mac address that already exists
 }

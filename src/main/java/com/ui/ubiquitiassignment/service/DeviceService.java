@@ -2,26 +2,24 @@ package com.ui.ubiquitiassignment.service;
 
 import com.ui.ubiquitiassignment.common.DeviceType;
 import com.ui.ubiquitiassignment.model.Device;
+import com.ui.ubiquitiassignment.model.DeviceTopology;
 import com.ui.ubiquitiassignment.repository.DeviceRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Service
 public class DeviceService {
 
-    private DeviceRepository deviceRepository;
+    private final DeviceRepository deviceRepository;
 
     public void registerDevice(Device device) {
         // todo
@@ -30,7 +28,7 @@ public class DeviceService {
         if (device.getUplinkMacAddress() != null) {
             deviceRepository.findByMacAddress(device.getUplinkMacAddress())
                     .ifPresentOrElse(
-                            uplinkDevice -> uplinkDevice.getChildDevices().add(device),
+                            uplinkDevice -> uplinkDevice.getDownlinkMacAddresses().add(device.getMacAddress()),
                             () -> {
                                 throw new IllegalArgumentException("Uplink device not found: " + device.getUplinkMacAddress());
                             });
@@ -53,15 +51,35 @@ public class DeviceService {
         return deviceRepository.findByMacAddress(macAddress);
     }
 
-    public List<Device> getNetworkTopology(String macAddress) {
-        Optional<Device> rootDeviceOpt = getDeviceByMacAddress(macAddress);
-        if (rootDeviceOpt.isPresent()) {
-            Device rootDevice = rootDeviceOpt.get();
-            Map<String, Device> deviceMap = buildDeviceMap();
-            buildTopology(rootDevice, deviceMap);
-            return Collections.singletonList(rootDevice);
+    public DeviceTopology getNetworkTopology(String macAddress) {
+        DeviceTopology deviceTopology = new DeviceTopology();
+        Device root = getDeviceByMacAddress(macAddress)
+                .orElseThrow(() -> new IllegalArgumentException("Device not found: " + macAddress));
+
+        deviceTopology.setRootDeviceType(root.getType());
+        deviceTopology.setRootMacAddress(root.getMacAddress());
+
+        // todo identify ids of downlink devices
+        // todo: how to identify all we need to retrieve by single call
+        buildTopology(root, deviceTopology.getDownlinkDevices());
+
+        return deviceTopology;
+    }
+
+    private void buildTopology(Device root, List<DeviceTopology> deviceTopologies) {
+        if (root.getDownlinkMacAddresses() != null && !root.getDownlinkMacAddresses().isEmpty()) {
+            for (String downlinkMacAddress : root.getDownlinkMacAddresses()) {
+                Device downlinkDevice =
+                        getDeviceByMacAddress(downlinkMacAddress) // todo try to fix n+1 problem or use tree structure
+                                .orElseThrow(() -> new IllegalArgumentException("Device not found: " + downlinkMacAddress));
+
+                DeviceTopology downlinkTopology = new DeviceTopology();
+                downlinkTopology.setRootDeviceType(downlinkDevice.getType());
+                downlinkTopology.setRootMacAddress(downlinkDevice.getMacAddress());
+                deviceTopologies.add(downlinkTopology);
+                buildTopology(downlinkDevice, downlinkTopology.getDownlinkDevices());
+            }
         }
-        return Collections.emptyList();
     }
 
     public List<Device> getFullNetworkTopology() {
@@ -94,7 +112,6 @@ public class DeviceService {
     }
 
 
-
     private Map<String, Device> buildDeviceMap() {
         List<Device> allDevices = deviceRepository.findAll();
         Map<String, Device> deviceMap = new HashMap<>();
@@ -116,10 +133,10 @@ public class DeviceService {
 
     private void buildTopology(Device root, Map<String, Device> deviceMap) {
         for (Device device : deviceMap.values()) {
-            if (root.getMacAddress().equals(device.getUplinkMacAddress())) {
-                root.getChildDevices().add(device);
-                buildTopology(device, deviceMap);
-            }
+//            if (root.getMacAddress().equals(device.getUplinkMacAddress())) {
+//                root.getDownlinkMacAddresses().add(device);
+//                buildTopology(device, deviceMap);
+//            }
         }
     }
 }

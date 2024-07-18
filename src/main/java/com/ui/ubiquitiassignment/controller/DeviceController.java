@@ -4,6 +4,7 @@ import com.ui.ubiquitiassignment.controller.dto.DeviceRequest;
 import com.ui.ubiquitiassignment.controller.dto.DeviceResponse;
 import com.ui.ubiquitiassignment.exception.DeviceNotFoundException;
 import com.ui.ubiquitiassignment.model.Device;
+import com.ui.ubiquitiassignment.model.DeviceTopology;
 import com.ui.ubiquitiassignment.service.DeviceService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +21,7 @@ import java.util.List;
 
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/api/devices")
+@RequestMapping("/api/v1/devices")
 public class DeviceController {
 
     private final DeviceService deviceService;
@@ -30,9 +31,9 @@ public class DeviceController {
     public void registerDevice(@Valid @RequestBody DeviceRequest deviceRequest) {
         //TODO IMPLEMENT MAPPER via Mapstruct
         Device device = new Device();
-        device.setType(deviceRequest.deviceType());
-        device.setMacAddress(deviceRequest.macAddress());
-        device.setUplinkMacAddress(deviceRequest.uplinkMacAddress());
+        device.setType(deviceRequest.getDeviceType());
+        device.setMacAddress(deviceRequest.getMacAddress());
+        device.setUplinkMacAddress(deviceRequest.getUplinkMacAddress());
 
         deviceService.registerDevice(device);
     }
@@ -57,7 +58,7 @@ public class DeviceController {
     }
 
     @GetMapping("/topology/{macAddress}")
-    public List<Device> getNetworkTopology(@PathVariable String macAddress) {
+    public DeviceTopology getNetworkTopology(@PathVariable String macAddress) {
         return deviceService.getNetworkTopology(macAddress);
     }
 
