@@ -1,6 +1,6 @@
 package com.ui.ubiquitiassignment.model;
 
-import com.ui.ubiquitiassignment.common.DeviceType;
+import com.ui.ubiquitiassignment.constant.DeviceType;
 import jakarta.validation.constraints.NotEmpty;
 import lombok.Data;
 import lombok.NoArgsConstructor;

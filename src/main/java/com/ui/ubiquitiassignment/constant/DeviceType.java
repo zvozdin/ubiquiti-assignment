@@ -1,4 +1,4 @@
-package com.ui.ubiquitiassignment.common;
+package com.ui.ubiquitiassignment.constant;
 
 public enum DeviceType {
     GATEWAY,

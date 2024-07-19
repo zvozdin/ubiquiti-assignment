@@ -24,6 +24,8 @@ import java.util.List;
 @RequestMapping("/api/v1/devices")
 public class DeviceController {
 
+    // todo exception handling 1. not found when linking 2. invalid mac address 3. invalid device type 4. invalid uplink mac address
+
     private final DeviceService deviceService;
 
     @ResponseStatus(HttpStatus.NO_CONTENT)
@@ -53,7 +55,7 @@ public class DeviceController {
     }
 
     @GetMapping("/topology")
-    public List<Device> getFullNetworkTopology() {
+    public List<DeviceTopology> getFullNetworkTopology() {
         return deviceService.getFullNetworkTopology();
     }
 
