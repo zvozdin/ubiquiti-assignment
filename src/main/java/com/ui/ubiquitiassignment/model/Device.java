@@ -22,7 +22,7 @@ import java.util.List;
 public class Device {
 
     @NotEmpty
-    private DeviceType type;
+    private DeviceType deviceType;
 
     // https://gist.github.com/takeouchida/b520471123bca4f71c4d
     private String macAddress;

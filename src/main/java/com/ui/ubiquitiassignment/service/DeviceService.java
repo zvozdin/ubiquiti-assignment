@@ -1,6 +1,7 @@
 package com.ui.ubiquitiassignment.service;
 
 import com.ui.ubiquitiassignment.constant.DeviceType;
+import com.ui.ubiquitiassignment.exception.DeviceNotFoundException;
 import com.ui.ubiquitiassignment.model.Device;
 import com.ui.ubiquitiassignment.model.DeviceTopology;
 import com.ui.ubiquitiassignment.repository.DeviceRepository;
@@ -21,7 +22,7 @@ import java.util.stream.Collectors;
 public class DeviceService {
 
     private static final ToIntFunction<Device> DEVICE_TO_PRIORITY_INT =
-            device -> switch (device.getType()) {
+            device -> switch (device.getDeviceType()) {
                 case DeviceType.GATEWAY -> 1;
                 case DeviceType.SWITCH -> 2;
                 case DeviceType.ACCESS_POINT -> 3;
@@ -38,7 +39,7 @@ public class DeviceService {
                     .ifPresentOrElse(
                             uplinkDevice -> uplinkDevice.getDownlinkMacAddresses().add(device.getMacAddress()),
                             () -> {
-                                throw new IllegalArgumentException("Uplink device not found: " + device.getUplinkMacAddress());
+                                throw new DeviceNotFoundException("Uplink device not found: " + device.getUplinkMacAddress());
                             });
         }
         deviceRepository.save(device);
@@ -46,7 +47,7 @@ public class DeviceService {
 
     public List<Device> getAllDevicesSortedByDeviceTypePriority() {
         return deviceRepository.findAll().stream()
-                .filter(device -> device.getType() != null && device.getMacAddress() != null) // todo write for Comparator
+                .filter(device -> device.getDeviceType() != null && device.getMacAddress() != null) // todo write test for Comparator
                 .sorted(Comparator.comparingInt(DEVICE_TO_PRIORITY_INT))
                 .collect(Collectors.toList());
     }
