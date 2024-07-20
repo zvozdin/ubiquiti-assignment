@@ -38,11 +38,11 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errors, HttpStatus.NOT_FOUND);
     }
 
-    // todo clean up
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, String>> handleException(Exception ex) {
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, String>> handleIllegalArgumentException(IllegalArgumentException ex) {
         Map<String, String> errors = new HashMap<>();
-        return new ResponseEntity<>(errors, HttpStatus.NOT_FOUND);
+        errors.put("message", ex.getMessage());
+        return new ResponseEntity<>(errors, HttpStatus.BAD_REQUEST);
     }
 
 }

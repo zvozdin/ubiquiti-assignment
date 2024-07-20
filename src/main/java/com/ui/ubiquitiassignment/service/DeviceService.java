@@ -7,9 +7,7 @@ import com.ui.ubiquitiassignment.model.DeviceTopology;
 import com.ui.ubiquitiassignment.repository.DeviceRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.util.CollectionUtils;
 
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -29,9 +27,9 @@ public class DeviceService {
             };
 
     private final DeviceRepository deviceRepository;
+    private final TopologyBuilderService topologyBuilderService;
 
     public void registerDevice(Device device) {
-        // todo
         validateDevice(device);
 
         if (device.getUplinkMacAddress() != null) {
@@ -47,7 +45,7 @@ public class DeviceService {
 
     public List<Device> getAllDevicesSortedByDeviceTypePriority() {
         return deviceRepository.findAll().stream()
-                .filter(device -> device.getDeviceType() != null && device.getMacAddress() != null) // todo write test for Comparator
+                .filter(device -> device.getDeviceType() != null)
                 .sorted(Comparator.comparingInt(DEVICE_TO_PRIORITY_INT))
                 .collect(Collectors.toList());
     }
@@ -56,22 +54,15 @@ public class DeviceService {
         return deviceRepository.findByMacAddress(macAddress);
     }
 
-    public DeviceTopology getNetworkTopology(String macAddress) {
-        DeviceTopology deviceTopology = new DeviceTopology();
-        Device root = getDeviceByMacAddress(macAddress)
-                .orElseThrow(() -> new IllegalArgumentException("Device not found: " + macAddress));
-
-        deviceTopology.setRootMacAddress(root.getMacAddress());
-
-        // todo identify ids of downlink devices
-        // todo: how to identify all we need to retrieve by single call
-        buildTopologyByLookupInStorage(root, deviceTopology.getDownlinkDevices());
-
-        return deviceTopology;
+    public DeviceTopology getNetworkTopologyByMacAddress(String macAddress) {
+        return topologyBuilderService.buildTopologyByMacAddress(macAddress);
     }
 
     /**
      * Retrieving all registered network device topology
+     * Building Map of devices by root and downlink devices where root is device without uplink device.getUplinkMacAddress() == null
+     * and downlink devices are devices with uplink device.getUplinkMacAddress() != null
+     * Then building tree structure of devices by root devices
      *
      * @return list of {@link DeviceTopology} as tree structure. Node is represented as macAddress
      */
@@ -81,75 +72,28 @@ public class DeviceService {
                         .collect(Collectors.groupingBy(device -> device.getUplinkMacAddress() == null,
                                 Collectors.toMap(Device::getMacAddress, device -> device)));
 
-        List<DeviceTopology> result = new ArrayList<>(devices.get(true).size());
-
         List<Device> roots =
-                devices.get(true).values().stream()
+                devices.getOrDefault(true, Map.of()).values().stream()
                         .filter(device -> device.getUplinkMacAddress() == null)
                         .toList();
 
-        roots.forEach(root -> {
-            DeviceTopology deviceTopology = new DeviceTopology();
-            deviceTopology.setRootMacAddress(root.getMacAddress());
-            List<DeviceTopology> rootDownlinkTopologies = deviceTopology.getDownlinkDevices();
-            buildTopologyFromGivenDevices(root, rootDownlinkTopologies, devices.get(false));
-            result.add(deviceTopology);
-        });
-
-        return result;
-
-    }
-
-
-    // todo think about to encapsulate those methods in a separate class
-    private void buildTopologyByLookupInStorage(Device root, List<DeviceTopology> rootDownlinkTopologies) {
-        if (!CollectionUtils.isEmpty(root.getDownlinkMacAddresses())) {
-            for (String downlinkMacAddress : root.getDownlinkMacAddresses()) {
-                Device downlinkDevice =
-                        getDeviceByMacAddress(downlinkMacAddress) // todo try to fix n+1 problem or use tree structure
-                                .orElseThrow(() -> new IllegalArgumentException("Device not found: " + downlinkMacAddress));
-
-                DeviceTopology downlinkTopology = new DeviceTopology();
-                downlinkTopology.setRootMacAddress(downlinkDevice.getMacAddress());
-                rootDownlinkTopologies.add(downlinkTopology);
-                buildTopologyByLookupInStorage(downlinkDevice, downlinkTopology.getDownlinkDevices());
-            }
-        }
-    }
-
-    private void buildTopologyFromGivenDevices(Device root, List<DeviceTopology> rootDownlinkTopologies, Map<String, Device> devices) {
-        if (!CollectionUtils.isEmpty(root.getDownlinkMacAddresses())) {
-            root.getDownlinkMacAddresses().stream()
-                    .map(devices::get)
-                    .forEach(downlinkDevice -> {
-                        DeviceTopology downlinkTopology = new DeviceTopology();
-                        downlinkTopology.setRootMacAddress(downlinkDevice.getMacAddress());
-                        rootDownlinkTopologies.add(downlinkTopology);
-                        buildTopologyFromGivenDevices(downlinkDevice, downlinkTopology.getDownlinkDevices(), devices);
-                    });
-        }
+        return roots.stream()
+                .map(root -> topologyBuilderService.buildTopologyFromMap(root, devices.get(false)))
+                .toList();
     }
 
     private void validateDevice(Device device) {
-        // todo should go to annotation based validation
-//        if (device.getMacAddress() == null || device.getMacAddress().isEmpty()) {
-//            throw new IllegalArgumentException("MAC address cannot be null or empty");
-//        }
-//
-//        if (!MAC_ADDRESS_PATTERN.matcher(device.getMacAddress()).matches()) {
-//            throw new IllegalArgumentException("Invalid MAC address format");
-//        }
+        deviceRepository.findByMacAddress(device.getMacAddress())
+                .ifPresent(existingDevice -> {
+                    throw new IllegalArgumentException("Device already exists: " + existingDevice.getMacAddress());
+                });
 
-
-        if (deviceRepository.findByMacAddress(device.getMacAddress()).isPresent()) {
-            throw new IllegalArgumentException("Duplicate MAC address: " + device.getMacAddress());
-        }
-
-        if (device.getUplinkMacAddress() != null) {
-            if (device.getMacAddress().equals(device.getUplinkMacAddress())) {
-                throw new IllegalArgumentException("Device cannot be its own uplink");
-            }
-        }
+        Optional.ofNullable(device.getUplinkMacAddress())
+                .ifPresent(uplinkMacAddress -> {
+                    if (uplinkMacAddress.equals(device.getMacAddress())) {
+                        throw new IllegalArgumentException("Device cannot be its own uplink");
+                    }
+                });
     }
 
 }

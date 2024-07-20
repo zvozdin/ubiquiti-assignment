@@ -10,7 +10,6 @@ import java.util.Optional;
 @Repository
 public class DeviceRepository {
 
-    // todo think about how to replace with a tree structure
     private final List<Device> devices = new ArrayList<>();
 
     public void save(Device device) {

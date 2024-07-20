@@ -55,8 +55,8 @@ public class DeviceController {
     }
 
     @GetMapping("/topology/{macAddress}")
-    public DeviceTopology getNetworkTopology(@PathVariable String macAddress) {
-        return deviceService.getNetworkTopology(macAddress);
+    public DeviceTopology getNetworkTopology(@NotEmpty @MacAddress @PathVariable String macAddress) {
+        return deviceService.getNetworkTopologyByMacAddress(macAddress);
     }
 
 }
