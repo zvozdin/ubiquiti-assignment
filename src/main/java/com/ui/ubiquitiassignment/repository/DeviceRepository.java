@@ -4,26 +4,26 @@ import com.ui.ubiquitiassignment.model.Device;
 import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Repository
 public class DeviceRepository {
 
-    private final List<Device> devices = new ArrayList<>();
+    private final Map<String, Device> devices = new HashMap<>();
 
     public void save(Device device) {
-        devices.add(device);
+        devices.put(device.getMacAddress(), device);
     }
 
     public List<Device> findAll() {
-        return devices;
+        return new ArrayList<>(devices.values());
     }
 
     public Optional<Device> findByMacAddress(String macAddress) {
-        return devices.stream()
-                .filter(device -> device.getMacAddress().equals(macAddress))
-                .findFirst();
+        return Optional.ofNullable(devices.get(macAddress));
     }
 
 }

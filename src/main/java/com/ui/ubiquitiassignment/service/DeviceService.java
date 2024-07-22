@@ -35,7 +35,10 @@ public class DeviceService {
         if (device.getUplinkMacAddress() != null) {
             deviceRepository.findByMacAddress(device.getUplinkMacAddress())
                     .ifPresentOrElse(
-                            uplinkDevice -> uplinkDevice.getDownlinkMacAddresses().add(device.getMacAddress()),
+                            uplinkDevice -> {
+                                uplinkDevice.getDownlinkMacAddresses().add(device.getMacAddress());
+                                deviceRepository.save(uplinkDevice);
+                            },
                             () -> {
                                 throw new DeviceNotFoundException("Uplink device not found: " + device.getUplinkMacAddress());
                             });

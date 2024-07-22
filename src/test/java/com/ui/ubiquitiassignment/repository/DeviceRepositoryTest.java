@@ -1,24 +1,21 @@
 package com.ui.ubiquitiassignment.repository;
 
-import com.ui.ubiquitiassignment.constant.DeviceType;
+import com.ui.ubiquitiassignment.helper.DeviceTestHelper;
 import com.ui.ubiquitiassignment.model.Device;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@ExtendWith(MockitoExtension.class)
 class DeviceRepositoryTest {
 
     @Test
     void save() {
         // Given
         DeviceRepository deviceRepository = new DeviceRepository();
-        Device device = buildDevice();
+        Device device = DeviceTestHelper.buildDeviceWithMacAddresses("00:11:22:33:44:55");
 
         // When
         deviceRepository.save(device);
@@ -31,8 +28,8 @@ class DeviceRepositoryTest {
     void findAll() {
         // Given
         DeviceRepository deviceRepository = new DeviceRepository();
-        Device device1 = buildDevice();
-        Device device2 = buildDevice();
+        Device device1 = DeviceTestHelper.buildDeviceWithMacAddresses("00:11:22:33:44:55");
+        Device device2 = DeviceTestHelper.buildDeviceWithMacAddresses("00:11:22:33:44:56");
         deviceRepository.save(device1);
         deviceRepository.save(device2);
 
@@ -47,7 +44,7 @@ class DeviceRepositoryTest {
     void findByMacAddress() {
         // Given
         DeviceRepository deviceRepository = new DeviceRepository();
-        Device device = buildDevice();
+        Device device = DeviceTestHelper.buildDeviceWithMacAddresses("00:11:22:33:44:55");
         deviceRepository.save(device);
 
         // When
@@ -62,7 +59,7 @@ class DeviceRepositoryTest {
     void findByMacAddress_NotFound() {
         // Given
         DeviceRepository deviceRepository = new DeviceRepository();
-        Device device = buildDevice();
+        Device device = DeviceTestHelper.buildDeviceWithMacAddresses("00:11:22:33:44:55");
         deviceRepository.save(device);
 
         // When
@@ -70,13 +67,6 @@ class DeviceRepositoryTest {
 
         // Then
         assertThat(foundDevice).isNotPresent();
-    }
-
-    private Device buildDevice() {
-        Device device = new Device();
-        device.setDeviceType(DeviceType.GATEWAY);
-        device.setMacAddress("00:11:22:33:44:55");
-        return device;
     }
 
 }

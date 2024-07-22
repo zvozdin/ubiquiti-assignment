@@ -17,11 +17,11 @@ public class TopologyBuilderService {
 
     private final DeviceRepository deviceRepository;
 
-    public DeviceTopology buildTopologyFromMap(Device root, Map<String, Device> devices) {
+    public DeviceTopology buildTopologyFromMap(Device root, Map<String, Device> downlinkDevices) {
         DeviceTopology deviceTopology = new DeviceTopology();
         deviceTopology.setRootMacAddress(root.getMacAddress());
         List<DeviceTopology> rootTopologies = deviceTopology.getDownlinkDevices();
-        buildTopology(root, rootTopologies, devices);
+        buildTopology(root, rootTopologies, downlinkDevices);
         return deviceTopology;
     }
 
@@ -32,7 +32,6 @@ public class TopologyBuilderService {
 
         deviceTopology.setRootMacAddress(root.getMacAddress());
 
-        // todo: ids of downlink devices -> how to identify all we need to retrieve by single call
         buildTopologyByLookupInStorage(root, deviceTopology.getDownlinkDevices());
         return deviceTopology;
     }
@@ -52,15 +51,15 @@ public class TopologyBuilderService {
         }
     }
 
-    private void buildTopology(Device root, List<DeviceTopology> rootTopologies, Map<String, Device> devices) {
+    private void buildTopology(Device root, List<DeviceTopology> rootTopologies, Map<String, Device> downlinkDevices) {
         if (!CollectionUtils.isEmpty(root.getDownlinkMacAddresses())) {
             root.getDownlinkMacAddresses().stream()
-                    .map(devices::get)
+                    .map(downlinkDevices::get)
                     .forEach(downlinkDevice -> {
                         DeviceTopology downlinkTopology = new DeviceTopology();
                         downlinkTopology.setRootMacAddress(downlinkDevice.getMacAddress());
                         rootTopologies.add(downlinkTopology);
-                        buildTopology(downlinkDevice, downlinkTopology.getDownlinkDevices(), devices);
+                        buildTopology(downlinkDevice, downlinkTopology.getDownlinkDevices(), downlinkDevices);
                     });
         }
     }
